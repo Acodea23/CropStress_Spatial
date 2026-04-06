@@ -140,7 +140,6 @@ r2
 spatial_dataframe$resids <- NULL
 ```
 
-<<<<<<< HEAD
 ## RMSE 
 
 ```{r}
@@ -239,7 +238,7 @@ rmse <- sqrt(mean((fitted(sp_lm)-spatial_dataframe$CWSI)^2))
 rmse
 
 ```
-=======
+
 
 ```{R}
 # All rows, including those with NA CWSI
@@ -305,5 +304,3 @@ ggplot(full_spatial_df, aes(x = POINT_X, y = POINT_Y, color = predicted_CWSI)) +
   labs(title = "Predicted CWSI - Silver Ridge Farms")
 ```
 
-
->>>>>>> 67150d566e0167c5d0fd4c3596e1b7f72fab21d5
