@@ -1,0 +1,128 @@
+---
+title: "Model"
+format: pdf
+editor: visual
+---
+
+```{r}
+
+library(tidyverse)
+library(spmodel)
+
+```
+
+## Data
+
+```{r}
+
+dat <- vroom::vroom("PotatoCWSI.csv") %>% filter(!is.na(CWSI))
+
+```
+
+## EDA
+
+```{r}
+
+library(viridis)
+
+# us_states <- map_data("state")
+ggplot() +
+  geom_point(data = dat, aes(x = POINT_X, y = POINT_Y, color = CWSI))+
+  scale_color_viridis()
+```
+
+make centers
+
+```{r}
+
+K <- 20
+obs_loc_mat <- dat[,c("POINT_X", "POINT_Y")]
+
+centers <- fields::cover.design(obs_loc_mat, nd = K)$design
+
+```
+
+```{r}
+
+dist_btwn_centers <- fields::rdist(centers)
+
+the_scale <- 1.5*max(apply(dist_btwn_centers, 1, function(x){sort(x)}[2]))
+```
+
+```{r}
+
+library(FRK)
+spat_features <- local_basis(
+  manifold = plane(),
+  loc = centers,
+  scale = rep(the_scale,K),
+  type = "bisquare"
+) %>%
+  eval_basis(as.matrix(obs_loc_mat)) %>%
+  as.matrix()
+
+colnames(spat_features) <- paste0("SF", 1:K)
+```
+
+```{r}
+
+spatial_dataframe <- bind_cols(dat, spat_features)
+```
+
+```{r}
+
+spat_lm <- lm(CWSI ~ . -POINT_X - POINT_Y, data = spatial_dataframe)
+#summary(spat_lm)
+
+spat_inter <- lm(CWSI ~ . -POINT_X - POINT_Y + TWI:ECA_SHALLOW + ASPECT:SLOPE, data = spatial_dataframe)
+#summary(spat_inter)
+anova(spat_lm, spat_inter)
+
+```
+
+```{r}
+
+#spat_lm
+
+
+spatial_dataframe$resids <- residuals(spat_inter)
+
+plot(spmodel::esv(resids ~ 1, data = spatial_dataframe, xcoord = POINT_X, ycoord = POINT_Y))
+```
+
+Normal
+
+```{r}
+
+stand_resids <- (spatial_dataframe$resids - mean(spatial_dataframe$resids))/sd(spatial_dataframe$resids)
+
+shapiro.test(stand_resids)
+
+hist(stand_resids, freq = F)
+curve(dnorm(x), add = T)
+
+```
+
+Equal Var
+
+```{r}
+
+fitteds <- fitted(spat_lm)
+plot(fitteds, stand_resids)
+
+lmtest::bptest(spat_lm)
+```
+
+R squared
+
+```{r}
+
+r2 <- cor(fitted(spat_inter), spatial_dataframe$CWSI)^2 
+r2
+
+```
+
+```{r}
+
+spatial_dataframe$resids <- NULL
+```
