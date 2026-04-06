@@ -126,3 +126,70 @@ r2
 
 spatial_dataframe$resids <- NULL
 ```
+
+
+```{R}
+# All rows, including those with NA CWSI
+full_dat <- vroom::vroom("PotatoCWSI.csv")
+
+# Engineer spatial features for ALL rows (not just non-NA)
+all_loc_mat <- full_dat[, c("POINT_X", "POINT_Y")]
+spat_features_all <- local_basis(
+  manifold = plane(), loc = centers,
+  scale = rep(the_scale, K), type = "bisquare"
+) %>% eval_basis(as.matrix(all_loc_mat)) %>% as.matrix()
+colnames(spat_features_all) <- paste0("SF", 1:K)
+
+full_spatial_df <- bind_cols(full_dat, spat_features_all)
+new_data <- full_spatial_df  # splm's predict handles NA CWSI rows
+
+preds <- predict(spat_splm, newdata = new_data, interval = "prediction")
+```
+
+
+```{r}
+library(spmodel)
+
+K <- 35  # up from 20
+
+spat_splm <- splm(CWSI ~ SLOPE + TWI + ASPECT + ECA_SHALLOW + NDVI +
+                    TWI:ECA_SHALLOW + ASPECT:SLOPE +
+                    SF1 + SF2 + ... + SF20,
+                  data = spatial_dataframe,
+                  spcov_type = "exponential",
+                  xcoord = POINT_X,
+                  ycoord = POINT_Y,
+                  estmethod = "ml")  # ml required for anova comparisons
+```
+
+
+```{R}
+decor_resids <- rstandard(spat_splm)
+
+# I: variogram should be flat
+plot(spmodel::esv(decor_resids ~ 1, data = spatial_dataframe,
+                  xcoord = POINT_X, ycoord = POINT_Y))
+
+# N: histogram
+hist(decor_resids, freq = FALSE)
+curve(dnorm(x), add = TRUE)
+
+# E: fitted vs decorrelated resids
+plot(fitted(spat_splm), decor_resids)
+
+# Model fit
+pseudoR2(spat_splm)
+```
+
+```{R}
+preds <- predict(spat_model, newdata = full_spatial_df)
+
+full_spatial_df$predicted_CWSI <- preds
+
+ggplot(full_spatial_df, aes(x = POINT_X, y = POINT_Y, color = predicted_CWSI)) +
+  geom_point() +
+  scale_color_viridis_c() +
+  labs(title = "Predicted CWSI - Silver Ridge Farms")
+```
+
+
