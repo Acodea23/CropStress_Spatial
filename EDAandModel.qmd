@@ -69,6 +69,53 @@ colnames(spat_features) <- paste0("SF", 1:K)
 spatial_dataframe <- bind_cols(dat, spat_features)
 ```
 
+
+```{r}
+library(viridis)
+library(patchwork)
+
+gg1 <- ggplot() +
+  geom_point(data = dat, aes(x = POINT_X, y = POINT_Y, color = CWSI))+
+  scale_color_viridis()+
+  geom_point(
+    data = data.frame(POINT_X = centers[,1], POINT_Y = centers[,2]),
+    aes(x = POINT_X, y = POINT_Y),
+    color = "red",
+    size = 2
+  ) +
+  theme_minimal()
+
+gg2 <- ggplot() +
+  geom_polygon(
+    data = us_states,
+    aes(x = long, y = lat, group = group),
+    fill = NA,
+    color = "black"
+  ) +
+  geom_point(
+    data = spatial_dataframe,
+    aes(x = long, y = lat, color = SF2),
+    size = 1.5
+  ) +
+  geom_point(
+    data = data.frame(long = centers[,1], lat = centers[,2]),
+    aes(x = long, y = lat),
+    color = "red",
+    size = 2
+  ) +
+  scale_color_viridis() +
+  coord_fixed(1.3) +
+  labs(
+    title = "Spatial Feature 2 (Bisquare)",
+    color = "SF2"
+  ) +
+  theme_minimal()
+
+gg1 + gg2
+
+```
+
+
 ```{r}
 
 spat_lm <- lm(CWSI ~ . -POINT_X - POINT_Y, data = spatial_dataframe)
@@ -196,18 +243,18 @@ spat_features <- local_basis(
 
 colnames(spat_features) <- paste0("SF", 1:K)
 
-spatial_dataframe <- bind_cols(all_dat, spat_features)
+#spatial_dataframe <- bind_cols(all_dat, spat_features)
 
 
-preds <- predict(spat_inter, newdata = all_dat)
-ggplot() +
-  geom_point(data = all_dat_features, aes(x = POINT_X, y = POINT_Y, color = preds))+
-  scale_color_viridis()
+# preds <- predict(spat_inter, newdata = all_dat)
+# ggplot() +
+#   geom_point(data = all_dat_features, aes(x = POINT_X, y = POINT_Y, color = preds))+
+#   scale_color_viridis()
 ```
 
 ```{r}
 library(spmodel)
-sp_lm <- splm(CWSI ~ SF1+SF2+SF3+SF4+SF5+SF6+SF7+SF8+SF9+SF10+SF11+SF12+SF13+SF14+SF15+SF16+SF17+SF18+SF19+SF20+SLOPE+TWI+ASPECT+ECA_SHALLOW+NDVI, 
+sp_lm <- splm(CWSI ~ SF1+SF2+SF3+SF4+SF5+SF6+SF7+SF8+SF9+SF10+SF11+SF12+SF13+SF14+SF15+SF16+SF17+SF18+SF19+SF20+SLOPE+TWI+ASPECT+ECA_SHALLOW+NDVI+TWI:ECA_SHALLOW + ASPECT:SLOPE,
               data = spatial_dataframe,
               spcov_type = 'exponential',
               xcoord = 'POINT_X', ycoord = 'POINT_Y')
@@ -215,26 +262,26 @@ sp_lm <- splm(CWSI ~ SF1+SF2+SF3+SF4+SF5+SF6+SF7+SF8+SF9+SF10+SF11+SF12+SF13+SF1
 
 ```{r}
 
-spatial_dataframe$resids <- residuals(sp_lm)
-
-plot(spmodel::esv(resids ~ 1, data = spatial_dataframe, xcoord = POINT_X, ycoord = POINT_Y))
-
-stand_resids <- (spatial_dataframe$resids - mean(spatial_dataframe$resids))/sd(spatial_dataframe$resids)
-
-shapiro.test(stand_resids)
-
-hist(stand_resids, freq = F)
-curve(dnorm(x), add = T)
-
-
-fitteds <- fitted(spat_lm)
-plot(fitteds, stand_resids)
-
-lmtest::bptest(spat_lm)
-
-r2 <- cor(fitted(sp_lm), spatial_dataframe$CWSI)^2 
-r2
-rmse <- sqrt(mean((fitted(sp_lm)-spatial_dataframe$CWSI)^2))
+# spatial_dataframe$resids <- residuals(sp_lm)
+# 
+# plot(spmodel::esv(resids ~ 1, data = spatial_dataframe, xcoord = POINT_X, ycoord = POINT_Y))
+# 
+# stand_resids <- (spatial_dataframe$resids - mean(spatial_dataframe$resids))/sd(spatial_dataframe$resids)
+# 
+# shapiro.test(stand_resids)
+# 
+# hist(stand_resids, freq = F)
+# curve(dnorm(x), add = T)
+# 
+# 
+# fitteds <- fitted(spat_lm)
+# plot(fitteds, stand_resids)
+# 
+# lmtest::bptest(spat_lm)
+# 
+# r2 <- cor(fitted(sp_lm), spatial_dataframe$CWSI)^2 
+# r2
+rmse <- sqrt(mean((sp_lm$fitted$response-spatial_dataframe$CWSI)^2))
 rmse
 
 ```
@@ -303,4 +350,3 @@ ggplot(full_spatial_df, aes(x = POINT_X, y = POINT_Y, color = predicted_CWSI)) +
   scale_color_viridis_c() +
   labs(title = "Predicted CWSI - Silver Ridge Farms")
 ```
-
