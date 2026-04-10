@@ -35,7 +35,7 @@ make centers
 
 ```{r}
 
-K <- 20
+K <- 35
 obs_loc_mat <- dat[,c("POINT_X", "POINT_Y")]
 
 centers <- fields::cover.design(obs_loc_mat, nd = K)$design
@@ -69,7 +69,6 @@ colnames(spat_features) <- paste0("SF", 1:K)
 spatial_dataframe <- bind_cols(dat, spat_features)
 ```
 
-
 ```{r}
 library(viridis)
 library(patchwork)
@@ -85,45 +84,19 @@ gg1 <- ggplot() +
   ) +
   theme_minimal()
 
-gg2 <- ggplot() +
-  geom_polygon(
-    data = us_states,
-    aes(x = long, y = lat, group = group),
-    fill = NA,
-    color = "black"
-  ) +
-  geom_point(
-    data = spatial_dataframe,
-    aes(x = long, y = lat, color = SF2),
-    size = 1.5
-  ) +
-  geom_point(
-    data = data.frame(long = centers[,1], lat = centers[,2]),
-    aes(x = long, y = lat),
-    color = "red",
-    size = 2
-  ) +
-  scale_color_viridis() +
-  coord_fixed(1.3) +
-  labs(
-    title = "Spatial Feature 2 (Bisquare)",
-    color = "SF2"
-  ) +
-  theme_minimal()
 
-gg1 + gg2
+gg1
 
 ```
 
-
 ```{r}
 
-spat_lm <- lm(CWSI ~ . -POINT_X - POINT_Y, data = spatial_dataframe)
-#summary(spat_lm)
-
-spat_inter <- lm(CWSI ~ . -POINT_X - POINT_Y + TWI:ECA_SHALLOW + ASPECT:SLOPE, data = spatial_dataframe)
-#summary(spat_inter)
-anova(spat_lm, spat_inter)
+# spat_lm <- lm(CWSI ~ . -POINT_X - POINT_Y, data = spatial_dataframe)
+# #summary(spat_lm)
+# 
+# spat_inter <- lm(CWSI ~ . -POINT_X - POINT_Y + TWI:ECA_SHALLOW + ASPECT:SLOPE, data = spatial_dataframe)
+# #summary(spat_inter)
+# anova(spat_lm, spat_inter)
 
 ```
 
@@ -132,129 +105,14 @@ anova(spat_lm, spat_inter)
 #spat_lm
 
 
-spatial_dataframe$resids <- residuals(spat_inter)
-
-plot(spmodel::esv(resids ~ 1, data = spatial_dataframe, xcoord = POINT_X, ycoord = POINT_Y))
-```
-
-Normal
-
-```{r}
-
-spatial_dataframe$resids <- residuals(spat_inter)
-
-plot(spmodel::esv(resids ~ 1, data = spatial_dataframe, xcoord = POINT_X, ycoord = POINT_Y))
-
-stand_resids <- (spatial_dataframe$resids - mean(spatial_dataframe$resids))/sd(spatial_dataframe$resids)
-
-shapiro.test(stand_resids)
-
-hist(stand_resids, freq = F)
-curve(dnorm(x), add = T)
-
-
-fitteds <- fitted(spat_lm)
-plot(fitteds, stand_resids)
-
-lmtest::bptest(spat_lm)
-
-r2 <- cor(fitted(spat_inter), spatial_dataframe$CWSI)^2 
-r2
-
-```
-
-Equal Var
-
-```{r}
-
-fitteds <- fitted(spat_lm)
-plot(fitteds, stand_resids)
-
-lmtest::bptest(spat_lm)
-```
-
-R squared
-
-```{r}
-
-r2 <- cor(fitted(spat_inter), spatial_dataframe$CWSI)^2 
-r2
-
-```
-
-```{r}
-
-spatial_dataframe$resids <- NULL
-```
-
-## RMSE 
-
-```{r}
-
-spatial_dataframe$resids <- residuals(spat_inter)
-
-plot(spmodel::esv(resids ~ 1, data = spatial_dataframe, xcoord = POINT_X, ycoord = POINT_Y))
-
-stand_resids <- (spatial_dataframe$resids - mean(spatial_dataframe$resids))/sd(spatial_dataframe$resids)
-
-shapiro.test(stand_resids)
-
-hist(stand_resids, freq = F)
-curve(dnorm(x), add = T)
-
-
-fitteds <- fitted(spat_lm)
-plot(fitteds, stand_resids)
-
-lmtest::bptest(spat_lm)
-
-r2 <- cor(fitted(spat_inter), spatial_dataframe$CWSI)^2 
-r2
-rmse <- sqrt(mean((fitted(spat_inter)-spatial_dataframe$CWSI)^2))
-rmse
-
-```
-
-I will need to have an object K, and object the scale
-
-```{r}
-
-all_dat <- vroom::vroom("PotatoCWSI.csv")
-
-K <- 20
-obs_loc_mat <- all_dat[,c("POINT_X", "POINT_Y")]
-
-#centers <- fields::cover.design(obs_loc_mat, nd = K)$design
-
-#dist_btwn_centers <- fields::rdist(centers)
-
-#the_scale <- 1.5*max(apply(dist_btwn_centers, 1, function(x){sort(x)}[2]))
-
-
-
-spat_features <- local_basis(
-  manifold = plane(),
-  loc = centers,
-  scale = rep(the_scale,K),
-  type = "bisquare"
-) %>%
-  eval_basis(as.matrix(obs_loc_mat)) %>%
-  as.matrix()
-
-colnames(spat_features) <- paste0("SF", 1:K)
-
-#spatial_dataframe <- bind_cols(all_dat, spat_features)
-
-
-# preds <- predict(spat_inter, newdata = all_dat)
-# ggplot() +
-#   geom_point(data = all_dat_features, aes(x = POINT_X, y = POINT_Y, color = preds))+
-#   scale_color_viridis()
+# spatial_dataframe$resids <- residuals(spat_inter)
+# 
+# plot(spmodel::esv(resids ~ 1, data = spatial_dataframe, xcoord = POINT_X, ycoord = POINT_Y))
 ```
 
 ```{r}
 library(spmodel)
-sp_lm <- splm(CWSI ~ SF1+SF2+SF3+SF4+SF5+SF6+SF7+SF8+SF9+SF10+SF11+SF12+SF13+SF14+SF15+SF16+SF17+SF18+SF19+SF20+SLOPE+TWI+ASPECT+ECA_SHALLOW+NDVI+TWI:ECA_SHALLOW + ASPECT:SLOPE,
+sp_lm <- splm(CWSI ~ SF1+SF2+SF3+SF4+SF5+SF6+SF7+SF8+SF9+SF10+SF11+SF12+SF13+SF14+SF15+SF16+SF17+SF18+SF19+SF20+SF21+SF22+SF23+SF24+SF25+SF26+SF27+SF28+SF29+SF30+SF31+SF32+SF33+SF34+SF35+SLOPE+TWI+ASPECT+ECA_SHALLOW+NDVI+TWI:ECA_SHALLOW + ASPECT:SLOPE,
               data = spatial_dataframe,
               spcov_type = 'exponential',
               xcoord = 'POINT_X', ycoord = 'POINT_Y')
@@ -262,91 +120,75 @@ sp_lm <- splm(CWSI ~ SF1+SF2+SF3+SF4+SF5+SF6+SF7+SF8+SF9+SF10+SF11+SF12+SF13+SF1
 
 ```{r}
 
-# spatial_dataframe$resids <- residuals(sp_lm)
-# 
-# plot(spmodel::esv(resids ~ 1, data = spatial_dataframe, xcoord = POINT_X, ycoord = POINT_Y))
-# 
-# stand_resids <- (spatial_dataframe$resids - mean(spatial_dataframe$resids))/sd(spatial_dataframe$resids)
-# 
-# shapiro.test(stand_resids)
-# 
-# hist(stand_resids, freq = F)
-# curve(dnorm(x), add = T)
-# 
-# 
-# fitteds <- fitted(spat_lm)
-# plot(fitteds, stand_resids)
-# 
-# lmtest::bptest(spat_lm)
-# 
-# r2 <- cor(fitted(sp_lm), spatial_dataframe$CWSI)^2 
-# r2
+
 rmse <- sqrt(mean((sp_lm$fitted$response-spatial_dataframe$CWSI)^2))
 rmse
 
 ```
 
-
-```{R}
-# All rows, including those with NA CWSI
-full_dat <- vroom::vroom("PotatoCWSI.csv")
-
-# Engineer spatial features for ALL rows (not just non-NA)
-all_loc_mat <- full_dat[, c("POINT_X", "POINT_Y")]
-spat_features_all <- local_basis(
-  manifold = plane(), loc = centers,
-  scale = rep(the_scale, K), type = "bisquare"
-) %>% eval_basis(as.matrix(all_loc_mat)) %>% as.matrix()
-colnames(spat_features_all) <- paste0("SF", 1:K)
-
-full_spatial_df <- bind_cols(full_dat, spat_features_all)
-new_data <- full_spatial_df  # splm's predict handles NA CWSI rows
-
-preds <- predict(spat_splm, newdata = new_data, interval = "prediction")
+```{r}
+# library(spmodel)
+# 
+# set.seed(123)
+# 
+# k <- 10
+# n <- nrow(spatial_dataframe)
+# fold_id <- sample(rep(1:k, length.out = n))
+# 
+# rmse_fold <- numeric(k)
+# 
+# for (i in 1:k) {
+#   train_data <- spatial_dataframe[fold_id != i, ]
+#   test_data  <- spatial_dataframe[fold_id == i, ]
+#   
+#   sp_lm_k <- splm(
+#     CWSI ~ SF1+SF2+SF3+SF4+SF5+SF6+SF7+SF8+SF9+SF10+
+#       SF11+SF12+SF13+SF14+SF15+SF16+SF17+SF18+SF19+SF20+
+#       SF21+SF22+SF23+SF24+SF25+SF26+SF27+SF28+SF29+SF30+
+#       SF31+SF32+SF33+SF34+SF35+
+#       SLOPE+TWI+ASPECT+ECA_SHALLOW+NDVI+
+#       TWI:ECA_SHALLOW + ASPECT:SLOPE,
+#     data = train_data,
+#     spcov_type = "exponential",
+#     xcoord = "POINT_X",
+#     ycoord = "POINT_Y"
+#   )
+#   
+#   preds <- predict(sp_lm_k, newdata = test_data)
+#   
+#   rmse_fold[i] <- sqrt(mean((preds - test_data$CWSI)^2))
+# }
+# 
+# rmse_cv <- mean(rmse_fold)
+# rmse_cv
 ```
 
+## Make df for all data
 
 ```{r}
-library(spmodel)
 
-K <- 35  # up from 20
+all_dat <- vroom::vroom("PotatoCWSI.csv")
 
-spat_splm <- splm(CWSI ~ SLOPE + TWI + ASPECT + ECA_SHALLOW + NDVI +
-                    TWI:ECA_SHALLOW + ASPECT:SLOPE +
-                    SF1 + SF2 + ... + SF20,
-                  data = spatial_dataframe,
-                  spcov_type = "exponential",
-                  xcoord = POINT_X,
-                  ycoord = POINT_Y,
-                  estmethod = "ml")  # ml required for anova comparisons
+all_obs_loc_mat <- all_dat[,c("POINT_X", "POINT_Y")]
+
+all_spat_features <- local_basis(
+  manifold = plane(),
+  loc = centers,
+  scale = rep(the_scale,K),
+  type = "bisquare"
+) %>%
+  eval_basis(as.matrix(all_obs_loc_mat)) %>%
+  as.matrix()
+
+colnames(all_spat_features) <- paste0("SF", 1:K)
+
+full_dataframe <- bind_cols(all_dat, all_spat_features)
 ```
 
+```{r}
 
-```{R}
-decor_resids <- rstandard(spat_splm)
+#save(rmse_fold, file="k_fold_results")
 
-# I: variogram should be flat
-plot(spmodel::esv(decor_resids ~ 1, data = spatial_dataframe,
-                  xcoord = POINT_X, ycoord = POINT_Y))
-
-# N: histogram
-hist(decor_resids, freq = FALSE)
-curve(dnorm(x), add = TRUE)
-
-# E: fitted vs decorrelated resids
-plot(fitted(spat_splm), decor_resids)
-
-# Model fit
-pseudoR2(spat_splm)
-```
-
-```{R}
-preds <- predict(spat_model, newdata = full_spatial_df)
-
-full_spatial_df$predicted_CWSI <- preds
-
-ggplot(full_spatial_df, aes(x = POINT_X, y = POINT_Y, color = predicted_CWSI)) +
-  geom_point() +
-  scale_color_viridis_c() +
-  labs(title = "Predicted CWSI - Silver Ridge Farms")
+save(full_dataframe, sp_lm, file = "CorbinBMatthewW.Rdata")
+load("CorbinBMatthewW.Rdata")
 ```

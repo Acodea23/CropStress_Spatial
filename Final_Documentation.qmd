@@ -1,0 +1,90 @@
+---
+title: "Documentation"
+author: "Corbin B, Matthew W"
+format: pdf
+editor: visual
+---
+
+# Crop Water Stress Prediction
+
+## Problem Background
+
+Silver Ridge Farms is a multi-generational potato farm that uses advanced monitoring technologies such as drone imagery, soil sensors, and satellite data to support precision agriculture. A key variable of interest is the **Crop Water Stress Index (CWSI)**, which indicates how water-stressed crops are, with higher values representing greater stress.
+
+Due to the high cost of monitoring equipment, CWSI is only available for a subset of the farm. However, several easier-to-measure spatial and environmental covariates are available across the entire field. The goal of this project is to use **spatial statistical modeling** to predict CWSI for the entire farm using these covariates, enabling better-informed irrigation decisions.
+
+------------------------------------------------------------------------
+
+## Description
+
+### Model Overview
+
+The trained model is a **spatial linear model** fit using the `splm()` function from the **spmodel** package. Its goal is to predict the **Crop Water Stress Index (CWSI)** across the entire farm using environmental covariates, terrain information, vegetation indices, and engineered spatial features, while explicitly accounting for spatial dependence in the data.
+
+CWSI is modeled as a linear function of several groups of predictors. Terrain and hydrologic variables include `SLOPE`, `ASPECT`, and `TWI`, while soil and vegetation conditions are captured through `ECA_SHALLOW` and `NDVI`. Two interaction term, `TWI:ECA_SHALLOW` and `ASPECT:SLOPE`, are included to represent combined effects of moisture accumulation with soil conductivity and directional slope with terrain steepness, respectively.
+
+In addition to these covariates, the model includes **35 spatial feature variables (`SF1`–`SF35`)** designed to capture large‑scale and medium‑scale spatial structure not explained by the observed predictors. These spatial features are constructed using a **basis function approach**. Specifically, representative spatial centers are selected across the study domain using a space‑filling design based on the observation coordinates. At each center, a **bisquare basis function** is defined with a shared spatial scale chosen based on the distances between centers. The spatial features are then evaluated at each observation location, producing smooth spatial surfaces that encode spatial proximity relative to each center. These features allow the model to flexibly represent latent spatial patterns while maintaining a linear modeling framework.
+
+Beyond the spatial features included as fixed effects, residual spatial autocorrelation is modeled using an **exponential spatial covariance structure**, defined over Euclidean distance using the `POINT_X` and `POINT_Y` coordinates. This spatial covariance accounts for remaining correlation between nearby observations after considering the covariates and spatial features, improving inference and predictive performance by acknowledging spatial dependence in the data.
+
+### Model Performance
+
+We performed **k-fold cross-validation** on our data. We used 10 folds, with **RMSE** as our metric. Our mean RMSE was 0.356 with a standard deviation on 0.024.
+
+------------------------------------------------------------------------
+
+## Dependencies
+
+-   spmodel
+
+-   ggplot2
+
+-   viridis
+
+------------------------------------------------------------------------
+
+## Objects
+
+-   **code_snippet**
+    -   R file containing the code to load in all libraries in the dependancies section and the objects described below. Will also produce the Outputs described at the bottom of the document.
+-   **sp_lm**
+    -   Class: large splm object
+    -   Description: Trained spatial linear model used to predict CWSI across the field
+-   **full_dataframe**
+    -   Class: R dataframe
+    -   Description: Dataframe containing the original features, and also the feature engineered spatial variables. Includes all observations given, including observations where the CWSI was NA
+
+------------------------------------------------------------------------
+
+## Usage
+
+The code below demonstrates how to load the trained model and generate predictions for the full field.\
+**This code does not retrain the model.**
+
+```{r}
+# Load required libraries
+library(spmodel)
+library(ggplot2)
+library(viridis)
+
+# Load trained model and df
+load("CorbinBMatthewW.Rdata")
+
+# Generate predictions
+Predictions <- predict(sp_lm, newdata = full_dataframe)
+full_dataframe$Predictions <- Predictions
+
+# Plot predictions
+ggplot() +
+  geom_point(data = full_dataframe, aes(x = POINT_X, y = POINT_Y, color = Predictions))+
+  scale_color_viridis()+
+  labs(title = "CWSI Predictions",
+       x = "X Coordinate",
+       y = "Y Coordinate")+
+  theme_minimal()
+
+```
+
+## Output
+
+Running this code snippet will load the **sp_lm and full_dataframe** objects onto your machine, it will also calculate a vector called **predictions** that will save on your machine and become a column of your **full_dataframe**. It will not save the predictions or the updated dataframe. Finally it will produce a ggplot that maps the predicted CWSI for each point in the dataset, to their coordinates.

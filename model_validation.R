@@ -1,0 +1,114 @@
+Normal
+
+```{r}
+
+spatial_dataframe$resids <- residuals(spat_inter)
+
+plot(spmodel::esv(resids ~ 1, data = spatial_dataframe, xcoord = POINT_X, ycoord = POINT_Y))
+
+stand_resids <- (spatial_dataframe$resids - mean(spatial_dataframe$resids))/sd(spatial_dataframe$resids)
+
+shapiro.test(stand_resids)
+
+hist(stand_resids, freq = F)
+curve(dnorm(x), add = T)
+
+
+fitteds <- fitted(spat_lm)
+plot(fitteds, stand_resids)
+
+lmtest::bptest(spat_lm)
+
+r2 <- cor(fitted(spat_inter), spatial_dataframe$CWSI)^2 
+r2
+
+```
+
+Equal Var
+
+```{r}
+
+fitteds <- fitted(spat_lm)
+plot(fitteds, stand_resids)
+
+lmtest::bptest(spat_lm)
+```
+
+R squared
+
+```{r}
+
+r2 <- cor(fitted(spat_inter), spatial_dataframe$CWSI)^2 
+r2
+
+```
+
+```{r}
+
+spatial_dataframe$resids <- NULL
+```
+
+## RMSE 
+
+```{r}
+
+spatial_dataframe$resids <- residuals(spat_inter)
+
+plot(spmodel::esv(resids ~ 1, data = spatial_dataframe, xcoord = POINT_X, ycoord = POINT_Y))
+
+stand_resids <- (spatial_dataframe$resids - mean(spatial_dataframe$resids))/sd(spatial_dataframe$resids)
+
+shapiro.test(stand_resids)
+
+hist(stand_resids, freq = F)
+curve(dnorm(x), add = T)
+
+
+fitteds <- fitted(spat_lm)
+plot(fitteds, stand_resids)
+
+lmtest::bptest(spat_lm)
+
+r2 <- cor(fitted(spat_inter), spatial_dataframe$CWSI)^2 
+r2
+rmse <- sqrt(mean((fitted(spat_inter)-spatial_dataframe$CWSI)^2))
+rmse
+
+```
+
+I will need to have an object K, and object the scale
+
+```{r}
+
+all_dat <- vroom::vroom("PotatoCWSI.csv")
+
+K <- 20
+obs_loc_mat <- all_dat[,c("POINT_X", "POINT_Y")]
+
+#centers <- fields::cover.design(obs_loc_mat, nd = K)$design
+
+#dist_btwn_centers <- fields::rdist(centers)
+
+#the_scale <- 1.5*max(apply(dist_btwn_centers, 1, function(x){sort(x)}[2]))
+
+
+
+spat_features <- local_basis(
+  manifold = plane(),
+  loc = centers,
+  scale = rep(the_scale,K),
+  type = "bisquare"
+) %>%
+  eval_basis(as.matrix(obs_loc_mat)) %>%
+  as.matrix()
+
+colnames(spat_features) <- paste0("SF", 1:K)
+
+#spatial_dataframe <- bind_cols(all_dat, spat_features)
+
+
+# preds <- predict(spat_inter, newdata = all_dat)
+# ggplot() +
+#   geom_point(data = all_dat_features, aes(x = POINT_X, y = POINT_Y, color = preds))+
+#   scale_color_viridis()
+```
