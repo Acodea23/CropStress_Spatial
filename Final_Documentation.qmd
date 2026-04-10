@@ -27,6 +27,32 @@ In addition to these covariates, the model includes **35 spatial feature variabl
 
 Beyond the spatial features included as fixed effects, residual spatial autocorrelation is modeled using an **exponential spatial covariance structure**, defined over Euclidean distance using the `POINT_X` and `POINT_Y` coordinates. This spatial covariance accounts for remaining correlation between nearby observations after considering the covariates and spatial features, improving inference and predictive performance by acknowledging spatial dependence in the data.
 
+We can consider the estimation of a single observation by using the equation:
+$$
+\begin{align}
+\widehat{\text{CWSI}}_i
+&= \beta_0 + \beta_1\,\text{SLOPE}_i + \beta_2\,\text{TWI}_i + \beta_3\,\text{ASPECT}_i + \beta_4\,\text{ECA_SHALLOW}_i + \beta_5\,\text{NDVI}_i \\
+&\quad + \beta_6\,(\text{TWI}_i \times \text{ECA_SHALLOW}_i) + \beta_7\,(\text{ASPECT}_i \times \text{SLOPE}_i)
++ \sum_{k=1}^{35} \beta_{7+k}\,\text{SF}_{k,i}
+\end{align}
+$$
+
+
+
+
+$$\hat{CWSI_i} = SLOPE_i+TWI_i+ASPECT_i+\text{ECA_SHALLOW}_i+
+NDVI_i+TWI_i*\text{ECA_SHALLOW}_i + ASPECT_i*SLOPE_i + SF1_i + SF2_i + \dots + SF35_i $$
+
+More generally, our model can be represented where CWSI is a vector of the CWSI values, X is a matrix containing the original variables, and also the 35 spatial features that were engineered, and $\beta$ is a vector containing the coefficients for all of the mentioned variables. The Covariance matrix will be defined below.
+
+$$ CWSI \sim MVN(\bf{X}\beta, \sigma^2\bf{R}) $$
+
+where $\bf{R} = \{\rho_{ij}\}$ is an $\textit{n x n}$ dense correlation matrix and $\rho_{ij}=1$ along the diagonal and on the off-diagonal
+
+$$ \rho_{ij} = (1-\omega)exp\{-\frac{d_{ij}}{\phi}\} $$
+
+where $d_{ij}$ is the spatial distance between $y_i$ and $y_j$, $\omega$ is a nugget parameter and $\phi$ is a range parameter.
+
 ### Model Performance
 
 We performed **k-fold cross-validation** on our data. We used 10 folds, with **RMSE** as our metric. Our mean RMSE was 0.356 with a standard deviation on 0.024.
