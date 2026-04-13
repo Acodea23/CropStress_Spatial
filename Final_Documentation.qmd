@@ -27,8 +27,7 @@ In addition to these covariates, the model includes **35 spatial feature variabl
 
 Beyond the spatial features included as fixed effects, residual spatial autocorrelation is modeled using an **exponential spatial covariance structure**, defined over Euclidean distance using the `POINT_X` and `POINT_Y` coordinates. This spatial covariance accounts for remaining correlation between nearby observations after considering the covariates and spatial features, improving inference and predictive performance by acknowledging spatial dependence in the data.
 
-We can consider the estimation of a single observation by using the equation:
-$$
+We can consider the estimation of a single observation by using the equation: $$
 \begin{align}
 \widehat{\text{CWSI}}_i
 &= \beta_0 + \beta_1\,\text{SLOPE}_i + \beta_2\,\text{TWI}_i + \beta_3\,\text{ASPECT}_i + \beta_4\,\text{ECA_SHALLOW}_i + \beta_5\,\text{NDVI}_i \\
@@ -36,12 +35,6 @@ $$
 + \sum_{k=1}^{35} \beta_{7+k}\,\text{SF}_{k,i}
 \end{align}
 $$
-
-
-
-
-$$\hat{CWSI_i} = SLOPE_i+TWI_i+ASPECT_i+\text{ECA_SHALLOW}_i+
-NDVI_i+TWI_i*\text{ECA_SHALLOW}_i + ASPECT_i*SLOPE_i + SF1_i + SF2_i + \dots + SF35_i $$
 
 More generally, our model can be represented where CWSI is a vector of the CWSI values, X is a matrix containing the original variables, and also the 35 spatial features that were engineered, and $\beta$ is a vector containing the coefficients for all of the mentioned variables. The Covariance matrix will be defined below.
 
