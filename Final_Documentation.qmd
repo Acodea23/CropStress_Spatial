@@ -106,4 +106,4 @@ ggplot() +
 
 ## Output
 
-Running this code snippet will load the **sp_lm and full_dataframe** objects onto your machine, it will also calculate a vector called **predictions** that will save on your machine and become a column of your **full_dataframe**. It will not save the predictions or the updated dataframe. Finally it will produce a ggplot that maps the predicted CWSI for each point in the dataset, to their coordinates.
+Running this code snippet will load the **sp_lm and full_dataframe** objects onto your machine, it will also calculate a vector called **Predictions** that will save on your machine and become a column of your **full_dataframe**. It will not save the predictions or the updated dataframe. Finally it will produce a ggplot that maps the predicted CWSI for each point in the dataset, to their coordinates.
