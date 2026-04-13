@@ -36,7 +36,7 @@ We can consider the estimation of a single observation by using the equation: $$
 \end{align}
 $$
 
-More generally, our model can be represented where CWSI is a vector of the CWSI values, X is a matrix containing the original variables, and also the 35 spatial features that were engineered, and $\beta$ is a vector containing the coefficients for all of the mentioned variables. The Covariance matrix will be defined below.
+More generally, our model can be represented where CWSI is a vector of the CWSI values, X is a matrix containing the original variables, and also the 35 spatial features that were engineered, and $\beta$ is a vector containing the coefficients for all of the mentioned variables. We define our full model below.
 
 $$ CWSI \sim MVN(\bf{X}\beta, \sigma^2\bf{R}) $$
 
